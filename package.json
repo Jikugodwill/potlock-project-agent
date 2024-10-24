@@ -11,6 +11,8 @@
   "dependencies": {
     "@elysiajs/swagger": "^1.1.5",
     "@near-js/client": "^0.0.2",
+    "@scalar/api-reference": "^1.25.48",
+    "@scalar/nextjs-api-reference": "^0.4.97",
     "elysia": "^1.1.23",
     "near-api-js": "^5.0.1",
     "next": "14.2.15",
