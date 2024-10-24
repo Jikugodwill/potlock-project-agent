@@ -24,7 +24,7 @@ export async function GET() {
     "x-mb": {
       "account-id": key.accountId,
       assistant: {
-        name: "Project Assistant",
+        name: "Potlock Project Assistant",
         description:
           "Assistant for using the Potlock API to create projects and retrieve project data.",
         instructions:
@@ -102,13 +102,15 @@ export async function GET() {
                             "Timestamp in milliseconds when the registration was last updated.",
                         },
                         admin_notes: {
-                          type: ["string", "null"],
+                          type: "string",
                           description: "Optional notes added by the admin.",
+                          nullable: true,
                         },
                         registrant_notes: {
-                          type: ["string", "null"],
+                          type: "string",
                           description:
                             "Optional notes added by the registrant.",
+                          nullable: true,
                         },
                         registered_by: {
                           type: "string",
@@ -124,6 +126,8 @@ export async function GET() {
                         "submitted_ms",
                         "updated_ms",
                         "registered_by",
+                        "admin_notes",
+                        "registrant_notes",
                       ],
                     },
                   },
