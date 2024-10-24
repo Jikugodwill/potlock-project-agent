@@ -1,398 +1,252 @@
 import { NextResponse } from "next/server";
 
-
 const key = JSON.parse(process.env.BITTE_KEY || "{}");
 const config = JSON.parse(process.env.BITTE_CONFIG || "{}");
 
 if (!key?.accountId) {
-    console.error("no account");
+  console.error("no account");
 }
 
 export async function GET() {
-    const pluginData = {
-        openapi: "3.0.0",
-        info: {
-            title: "Boilerplate",
-            description: "API for the boilerplate",
-            version: "1.0.0",
-        },
-        servers: [
-            {
-                url: config.url,
-            },
+  const pluginData = {
+    openapi: "3.0.0",
+    info: {
+      title: "Potlock API",
+      description:
+        "API for interacting with Potlock operations including project retrieval and creation.",
+      version: "1.0.0",
+    },
+    servers: [
+      {
+        url: config.url,
+      },
+    ],
+    "x-mb": {
+      "account-id": key.accountId,
+      assistant: {
+        name: "Project Assistant",
+        description:
+          "Assistant for using the Potlock API to create projects and retrieve project data.",
+        instructions:
+          "You are an assistant that helps users interact with Potlock. You can generate register project transactions and retrieve project data. Generated transactions can be presented to the user for signing and broadcasting to the network.",
+        tools: [
+          { type: "submit-query" },
+          {
+            type: "generate-transaction",
+          },
         ],
-        "x-mb": {
-            "account-id": key.accountId,
-            assistant: {
-                name: "Your Assistant",
-                description: "An assistant that answers with blockchain information",
-                instructions: "You answer with a list of blockchains. Use the tools to get blockchain information.",
-                tools: [{ type: "generate-transaction" }]
+      },
+    },
+    paths: {
+      "/api/project/{projectId}": {
+        get: {
+          description: "Fetch data for a specific project by identifier.",
+          operationId: "getProjectData",
+          parameters: [
+            {
+              in: "path",
+              name: "projectId",
+              required: true,
+              schema: {
+                type: "string",
+              },
+              description:
+                "The identifier of the project to retrieve data for.",
             },
-        },
-        paths: {
-            "/api/tools/get-blockchains": {
-                get: {
-                    summary: "get blockchain information",
-                    description: "Respond with a list of blockchains",
-                    operationId: "get-blockchains",
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            message: {
-                                                type: "string",
-                                                description: "The list of blockchains",
-                                            },
-                                        },
-                                    },
-                                },
-                            },
+          ],
+          responses: {
+            "200": {
+              description: "Project data retrieved successfully.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: {
+                          type: "string",
+                          description:
+                            "Unique identifier for the registration.",
                         },
+                        registrant_id: {
+                          type: "string",
+                          description: "The identifier of the registrant.",
+                        },
+                        list_id: {
+                          type: "integer",
+                          description: "Identifier for the registration list.",
+                        },
+                        status: {
+                          type: "string",
+                          description: "Current registration status.",
+                          enum: [
+                            "Approved",
+                            "Rejected",
+                            "Pending",
+                            "Graylisted",
+                            "Blacklisted",
+                            "Unregistered",
+                          ],
+                        },
+                        submitted_ms: {
+                          type: "integer",
+                          format: "int64",
+                          description:
+                            "Timestamp in milliseconds when the registration was submitted.",
+                        },
+                        updated_ms: {
+                          type: "integer",
+                          format: "int64",
+                          description:
+                            "Timestamp in milliseconds when the registration was last updated.",
+                        },
+                        admin_notes: {
+                          type: ["string", "null"],
+                          description: "Optional notes added by the admin.",
+                        },
+                        registrant_notes: {
+                          type: ["string", "null"],
+                          description:
+                            "Optional notes added by the registrant.",
+                        },
+                        registered_by: {
+                          type: "string",
+                          description:
+                            "Identifier for the user or system that registered the entity.",
+                        },
+                      },
+                      required: [
+                        "id",
+                        "registrant_id",
+                        "list_id",
+                        "status",
+                        "submitted_ms",
+                        "updated_ms",
+                        "registered_by",
+                      ],
                     },
+                  },
                 },
+              },
             },
-            "/api/tools/get-user": {
-                get: {
-                    summary: "get user information",
-                    description: "Respond with user account ID",
-                    operationId: "get-user",
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            accountId: {
-                                                type: "string",
-                                                description: "The user's account ID",
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
+            "404": {
+              description: "Project not found.",
             },
-            "/api/tools/reddit": {
-                get: {
-                    summary: "get Reddit frontpage posts",
-                    description: "Fetch and return a list of posts from the Reddit frontpage",
-                    operationId: "get-reddit-posts",
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            posts: {
-                                                type: "array",
-                                                items: {
-                                                    type: "object",
-                                                    properties: {
-                                                        title: {
-                                                            type: "string",
-                                                            description: "The title of the post"
-                                                        },
-                                                        author: {
-                                                            type: "string",
-                                                            description: "The username of the post author"
-                                                        },
-                                                        subreddit: {
-                                                            type: "string",
-                                                            description: "The subreddit where the post was made"
-                                                        },
-                                                        score: {
-                                                            type: "number",
-                                                            description: "The score (upvotes) of the post"
-                                                        },
-                                                        num_comments: {
-                                                            type: "number",
-                                                            description: "The number of comments on the post"
-                                                        },
-                                                        url: {
-                                                            type: "string",
-                                                            description: "The URL of the post on Reddit"
-                                                        }
-                                                    }
-                                                },
-                                                description: "An array of Reddit posts"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "500": {
-                            description: "Error response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/api/tools/twitter": {
-                get: {
-                    operationId: "getTwitterShareIntent",
-                    summary: "Generate a Twitter share intent URL",
-                    description: "Creates a Twitter share intent URL based on provided parameters",
-                    parameters: [
-                        {
-                            name: "text",
-                            in: "query",
-                            required: true,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "The text content of the tweet"
-                        },
-                        {
-                            name: "url",
-                            in: "query",
-                            required: false,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "The URL to be shared in the tweet"
-                        },
-                        {
-                            name: "hashtags",
-                            in: "query",
-                            required: false,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "Comma-separated hashtags for the tweet"
-                        },
-                        {
-                            name: "via",
-                            in: "query",
-                            required: false,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "The Twitter username to attribute the tweet to"
-                        }
-                    ],
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            twitterIntentUrl: {
-                                                type: "string",
-                                                description: "The generated Twitter share intent URL"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "400": {
-                            description: "Bad request",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "500": {
-                            description: "Error response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/api/tools/create-transaction": {
-                get: {
-                    operationId: "createNearTransaction",
-                    summary: "Create a NEAR transaction payload",
-                    description: "Generates a NEAR transaction payload for transferring tokens",
-                    parameters: [
-                        {
-                            name: "receiverId",
-                            in: "query",
-                            required: true,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "The NEAR account ID of the receiver"
-                        },
-                        {
-                            name: "amount",
-                            in: "query",
-                            required: true,
-                            schema: {
-                                type: "string"
-                            },
-                            description: "The amount of NEAR tokens to transfer"
-                        }
-                    ],
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            transactionPayload: {
-                                                type: "object",
-                                                properties: {
-                                                    receiverId: {
-                                                        type: "string",
-                                                        description: "The receiver's NEAR account ID"
-                                                    },
-                                                    actions: {
-                                                        type: "array",
-                                                        items: {
-                                                            type: "object",
-                                                            properties: {
-                                                                type: {
-                                                                    type: "string",
-                                                                    description: "The type of action (e.g., 'Transfer')"
-                                                                },
-                                                                params: {
-                                                                    type: "object",
-                                                                    properties: {
-                                                                        deposit: {
-                                                                            type: "string",
-                                                                            description: "The amount to transfer in yoctoNEAR"
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "400": {
-                            description: "Bad request",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "500": {
-                            description: "Error response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/api/tools/coinflip": {
-                get: {
-                    summary: "Coin flip",
-                    description: "Flip a coin and return the result (heads or tails)",
-                    operationId: "coinFlip",
-                    responses: {
-                        "200": {
-                            description: "Successful response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            result: {
-                                                type: "string",
-                                                description: "The result of the coin flip (heads or tails)",
-                                                enum: ["heads", "tails"]
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "500": {
-                            description: "Error response",
-                            content: {
-                                "application/json": {
-                                    schema: {
-                                        type: "object",
-                                        properties: {
-                                            error: {
-                                                type: "string",
-                                                description: "Error message"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+          },
         },
-    };
+      },
+      "/api/project/create": {
+        post: {
+          summary: "Create a new project",
+          description:
+            "Create a new project by providing the project name and description.",
+          operationId: "createProject",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                      description: "The name of the project to be created.",
+                    },
+                    description: {
+                      type: "string",
+                      description: "A brief description of the project.",
+                    },
+                  },
+                  required: ["name", "description"],
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Project transactions generated successfully.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: {
+                          type: "string",
+                          description:
+                            "The identifier of the newly created project.",
+                        },
+                        name: {
+                          type: "string",
+                          description: "The name of the newly created project.",
+                        },
+                        description: {
+                          type: "string",
+                          description:
+                            "The description of the newly created project.",
+                        },
+                        functionCalls: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              methodName: {
+                                type: "string",
+                                description:
+                                  "The name of the method to be called on the contract.",
+                              },
+                              args: {
+                                type: "object",
+                                description: "Arguments for the function call.",
+                                properties: {
+                                  registration_only: {
+                                    type: "boolean",
+                                  },
+                                  account_id: {
+                                    type: "string",
+                                  },
+                                  receiver_id: {
+                                    type: "string",
+                                  },
+                                  amount: {
+                                    type: "string",
+                                  },
+                                  msg: {
+                                    type: "string",
+                                    description:
+                                      "A JSON string containing project actions and parameters.",
+                                  },
+                                },
+                                additionalProperties: true,
+                              },
+                              gas: {
+                                type: "string",
+                                description:
+                                  "The amount of gas to attach to the transaction, in yoctoNEAR.",
+                              },
+                              amount: {
+                                type: "string",
+                                description:
+                                  "The amount of NEAR tokens to attach to the transaction, in yoctoNEAR.",
+                              },
+                            },
+                            required: ["methodName", "args", "gas", "amount"],
+                          },
+                        },
+                      },
+                      required: ["receiverId", "functionCalls"],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
 
-    return NextResponse.json(pluginData);
+  return NextResponse.json(pluginData);
 }
